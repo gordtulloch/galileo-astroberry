@@ -1,5 +1,10 @@
 # amd64 VirtualBox smoke-test ISO
 
+> **Superseded.** The project now builds on [Astroberry OS](https://github.com/gordtulloch/astroberry-os)
+> instead of its own operating system (see [docs/PSD.md](../../docs/PSD.md)).
+> This ISO duplicates what Astroberry provides and is kept for reference only.
+> It was never confirmed to build successfully.
+
 This is a minimal Debian 13 (Trixie) amd64 live/install ISO for validating the
 boot and installation path in VirtualBox. It is not the Galileo Linux product
 image: it does not include Galileo, the Flask interface, wireless onboarding, or

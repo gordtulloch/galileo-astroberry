@@ -1,111 +1,98 @@
-# Galileo Linux Handoff Progress
+# Galileo on Astroberry — Progress
 
-## Current task
+## Current direction
 
-Prepare an initial **amd64 Debian ISO for a VirtualBox boot/install smoke test**.
-The user selected `boot_install` scope: validate the base OS boot/install,
-networking, SSH, and package manifest only. This is not yet a Galileo Linux
-product image.
+The project no longer builds its own operating system. Galileo is layered on
+top of **Astroberry OS** ([astroberry-os](https://github.com/gordtulloch/astroberry-os),
+[astroberry-manager](https://github.com/gordtulloch/astroberry-manager); both
+GPL-3.0, as is Galileo) using the WebConnect plugin where appropriate, leaving
+Astroberry code untouched, with the aim of contributing all Galileo functions
+back to Astroberry. See [docs/PSD.md](docs/PSD.md) (rewritten for this
+direction) for scope and open decisions.
 
-## Project decisions captured so far
+## Status
 
-- Debian-based Galileo imaging distribution for Raspberry Pi 4 and newer
-  (64-bit ARM) and 64-bit amd64.
-- amd64 deliverable: bootable ISO; Raspberry Pi deliverable: disk image written
-  to microSD through Raspberry Pi Imager.
-- Headless by default; Flask web interface is intended as the primary user
-  interface and SSH is available for administration/recovery.
-- First boot provides a wireless setup SSID; UI configures local Wi-Fi; device
-  falls back to hotspot if no configured network is available.
-- Default hostname/network name is `galileo.local`, changeable in the web UI.
-- Include INDI and INDI-3rdparty. Stable is default; user may select nightly.
-  Selection does not trigger an update; the next manually run update uses that
-  channel. No scheduled nightly updates are required.
-- Project source updates are user initiated and retrieve source through Git,
-  then build applicable components. Normal Debian OS packages are managed
-  through APT.
-- `brltty` must not be installed/enabled because it can interfere with USB
-  serial astronomy devices.
-- Current ISO test is Debian 13 (Trixie), amd64, in VirtualBox. Product
-  application, web UI, Galileo, INDI, and Raspberry Pi support are intentionally
-  excluded from this first smoke image.
+- Documentation (README, CLAUDE.md, PSD, this file) revised for the new
+  direction.
+- **Base image built:** `dist/debian-trixie-astroberry-amd64-smoke-20261030.iso`
+  (2.5 GB, sha256 `6ca6da44c7c567994d831bd2a544f13c9eca07939c4a3ea0f557e2e2e8bda9a1`)
+  from [`images/astroberry-test/`](images/astroberry-test/). Debian 13 Trixie
+  with Astroberry OS 3.2 packages from astroberry.io (astroberry-manager 1.2,
+  astroberry-os-sysmod 3.2, INDI 2.2.1, PHD2 2.6.14), no KStars. The build hook and
+  `validate-iso.sh` passed (packages from astroberry.io, no KStars, no brltty,
+  boot catalog present). **Not booted** — see its README for the VirtualBox
+  checklist. The project owner reported that it boots as a Live CD in VirtualBox
+  but has no install-to-disk option and shows the Debian boot menu.
+- **Config changed, not rebuilt (stopped at the owner's request):** Calamares
+  installer + GRUB packages added, `--debian-installer none`, and BIOS/UEFI boot
+  menus patched to start the Live system immediately (owner's preference: boot
+  straight into Live; install locally from the desktop is optional). The ISO in
+  `dist/` predates these changes. Next build must be run and validated before
+  anything is claimed about them. `images/astroberry-test/README.md` has the details.
+- Findings from the build: `astroberry-os` hard-depends on `kstars-bleeding`
+  (so its dependency list is installed instead — a candidate first upstream
+  request: make KStars a Recommends); FireCapture/AstroDMx/CCDciel are in the
+  `restricted` component and were left out; live-build's firmware list conflicts
+  with Astroberry's INDI drivers via `indi-dsi`; installing Astroberry did not
+  pull in `brltty`; live-build's `--debian-installer live` yields no installer
+  (only "Live system" boot entries), so Calamares is used instead; the build
+  script originally wrote the container's `/workspace/...` path into the `.sha256`
+  file (fixed).
+- Build tips: run the Docker build with `.\images\astroberry-test\build-iso.ps1`;
+  when stopping a build, stop only the container from image
+  `astroberry-amd64-smoke-builder:local` (`docker ps --filter ancestor=...`), not all
+  containers. A failed live-build leaves `chroot/root/packages.chroot` in its work
+  directory (`/var/tmp/astroberry-amd64-build`, inside the container), which shows
+  the exact package list apt received.
+- Not yet done: any hands-on check of a running Astroberry system. Statements
+  about Astroberry's runtime behaviour in the PSD (hostname, ports, services)
+  still come from its READMEs and architecture document.
 
-## Files created/changed for the smoke build
+## Earlier work (superseded)
 
-- `images/amd64-test/Dockerfile` — Debian Trixie container with live-build and
-  ISO build dependencies.
-- `images/amd64-test/build-iso.ps1` — Windows PowerShell Docker wrapper.
-- `images/amd64-test/build-iso.sh` — invokes live-build, validates output, and
-  copies ISO/checksum to `dist/`.
-- `images/amd64-test/validate-iso.sh` — checks El Torito boot catalog, ISO
-  package manifest, required packages, and that `brltty` is absent.
-- `images/amd64-test/config/package-lists/galileo-test.list.chroot` — smoke
-  image packages (live installer, network tools, SSH, NetworkManager, Avahi).
-- `images/amd64-test/config/hooks/normal/0990-check-smoke-image.chroot` —
-  fails build if `brltty` appears or required packages are missing; enables
-  SSH, NetworkManager, and Avahi.
-- `images/amd64-test/README.md` — Docker build instructions and manual
-  VirtualBox validation checklist.
-- `.github/workflows/amd64-virtualbox-smoke-iso.yml` — manually runnable and
-  path-triggered CI build, publishes ISO and checksum.
-- `README.md` — updated project status to describe the initial ISO workflow.
+The first direction produced a standalone Debian 13 amd64 smoke-test ISO build
+and INDI/INDI-3rdparty/PHD2 build scripts. It duplicates Astroberry and is
+retained for reference only:
 
-## Build environment and attempts
+- `images/amd64-test/` — Dockerfile, live-build config, build/validate scripts,
+  VirtualBox checklist.
+- `.github/workflows/amd64-virtualbox-smoke-iso.yml` — CI build.
+- `scripts/build/`, `scripts/build-galileo/` — component build scripts.
 
-- Workspace: `C:\Projects\GalileoLinux`.
-- Windows host. Docker Desktop is installed and running; `docker ps` succeeded
-  after initial Docker daemon API failure.
-- No WSL Linux distribution was available.
-- Docker builder image `galileo-linux-amd64-smoke-builder:local` built
-  successfully from `images/amd64-test/Dockerfile`.
-- First container build attempt failed because the mounted shell scripts had
-  Windows CRLF line endings; this was corrected to LF.
-- A retry then failed with `set: pipefail` because `/bin/sh` was invoked even
-  though the script uses Bash strict mode. The Docker entrypoint was changed to
-  `/bin/bash`, and Bash availability was verified in the image.
-- The latest `docker run --rm --privileged ...` ISO build was started but
-  execution was interrupted before the command returned. No ISO build or
-  validation success has been confirmed. PowerShell reports no remaining
-  sessions, so check whether `dist/` or generated build state exists before
-  deciding whether to rerun.
-- Do not tell the user that an ISO has been completed until a successful build
-  and validation are confirmed.
+No ISO build or validation was ever confirmed successful. History: container
+build failed on CRLF line endings (fixed to LF), then on `sh` vs `bash`
+(entrypoint changed to `/bin/bash`); the last run was interrupted before it
+returned. The Windows wrapper and CI both run a privileged Docker container
+(needed by live-build); CI runner support was never confirmed.
 
 ## Next steps
 
-1. Inspect `C:\Projects\GalileoLinux\dist` and
-   `C:\Projects\GalileoLinux\images\amd64-test` for partial build output.
-2. Rerun the container build using Docker Desktop:
+0. Rebuild the ISO with the pending config (Calamares, menu bypass), confirm
+   `validate-iso.sh` passes, and boot it. If the menu bypass or Calamares
+   misbehaves, adjust `images/astroberry-test/` and record what was learned.
+1. Boot the new ISO in VirtualBox (checklist in `images/astroberry-test/README.md`),
+   and install the current Astroberry OS release on a Raspberry Pi 5, and record what it
+   provides against PSD §5.1: hostname, ports,
+   service names, remote desktop, hotspot, `brltty`, APT repository setup,
+   Manager's extension points.
+2. Contact the Astroberry maintainers; the two repositories under
+   `gordtulloch/` are forks of `astroberry-official/*`. Agree contribution flow
+   and which Galileo pieces go upstream first.
+3. Spike: run Galileo and WebConnect by hand on stock Astroberry (own
+   virtual environment, systemd units, ports), alongside Manager and INDI Web
+   Manager.
+4. Settle the PSD §11 decisions: name, hostname, repository hosting, Python
+   environment, web arrangement, pre-integrated image, fate of the superseded
+   ISO work.
+5. Then begin Debian packaging (`galileo`, `galileo-webconnect`,
+   `galileo-astroberry`) following Astroberry's build conventions.
 
-   ```powershell
-   docker build --platform linux/amd64 --tag galileo-linux-amd64-smoke-builder:local --file 'C:\Projects\GalileoLinux\images\amd64-test\Dockerfile' 'C:\Projects\GalileoLinux'
-   docker run --rm --privileged --platform linux/amd64 --volume 'C:\Projects\GalileoLinux:/workspace' --workdir /workspace galileo-linux-amd64-smoke-builder:local
-   ```
+## Housekeeping to consider
 
-   Capture build output to a log if needed. The build downloads Debian packages,
-   so allow a long run and adequate free disk space.
-3. If build fails, diagnose/fix the first actual `live-build` failure. Likely
-   areas to check include whether the selected `live-build` version accepts
-   `--debian-installer live`, hook directory/stage semantics, package manifest
-   location inside the produced ISO, and availability of installer packages
-   for Trixie.
-4. Confirm the final ISO and `.sha256` under `dist/`, run the ISO validation,
-   verify `brltty` absent from the package manifest, and inspect boot catalog.
-5. If feasible, boot the ISO in VirtualBox and complete the live boot and
-   installation smoke checklist. The current environment does not establish
-   that VirtualBox is installed or available.
-6. Update the user with the exact artifact path, validation results, and any
-   remaining VirtualBox/manual checks.
-
-## Known review concerns
-
-- The test-image README describes a live account and SSH. Confirm the default
-  live account authentication and ensure the test image is explicitly limited
-  to isolated development use; avoid implying production-safe access controls.
-- The Windows Docker wrapper invokes a privileged container. This is expected
-  for `live-build` chroot/mount operations, but document that Docker Desktop
-  must be trusted and running.
-- `.github/workflows/amd64-virtualbox-smoke-iso.yml` currently runs a
-  privileged Docker container in CI. Confirm GitHub-hosted runner support.
-- Workspace root was reported as not a Git repository; do not assume git
-  status/diff is available.
+- Galileo's own repository and wiki: the wiki's *Installing INDI* article
+  already mentions Astroberry as a ready-made option and remains accurate. When
+  packages exist, add install instructions there and to the Galileo README and
+  CHANGELOG as that repository's rules require.
+- The WebConnect and MobileConnect plugin documents in the Galileo repository
+  have uncommitted changes in progress; coordinate any cross-references
+  (WebConnect on Astroberry) with them rather than editing them from here.
