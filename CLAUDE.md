@@ -4,40 +4,42 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Galileo Linux is a *planned* Debian-based OS (Raspberry Pi 4+ arm64 and amd64) for running the Galileo imaging system and INDI headlessly, with a Flask web UI as the primary interface. Only the scope ([docs/PSD.md](docs/PSD.md), [README.md](README.md)) and an **amd64 VirtualBox smoke-test ISO build** exist. The Flask UI, Galileo/INDI integration, update function, and Raspberry Pi image are not implemented — don't describe them as existing. [Progress.md](Progress.md) is a handoff log with build history and open next steps; check it first. Update the README/PSD status if that changes.
+The project is **Galileo layered on Astroberry OS**, not a standalone operating system. Galileo is added to a stock [Astroberry OS](https://github.com/gordtulloch/astroberry-os) system (with [Astroberry Manager](https://github.com/gordtulloch/astroberry-manager) as its web interface) as extra Debian packages, using the WebConnect plugin ([Galileo-WebConnect](https://github.com/gordtulloch/Galileo-WebConnect)) for browser access. The aim is to contribute all Galileo functions back to Astroberry. Both are GPL-3.0. Authoritative scope: [docs/PSD.md](docs/PSD.md); overview: [README.md](README.md); working log: [Progress.md](Progress.md) — check it first.
 
-Not a git repository (no git status/diff available). Windows host; builds run in Docker Desktop.
+Only the base image exists: [images/astroberry-test/](images/astroberry-test/) builds a Debian 13 Trixie amd64 ISO with Astroberry OS installed from Astroberry's APT repository, without KStars (build with `.\images\astroberry-test\build-iso.ps1`; output in `dist/`). The ISO in `dist/` (first build) boots as a Live CD per the owner but has no installer and shows a boot menu; the config has since been changed (Calamares, boot-menu bypass) and **not rebuilt** — don't claim the new behaviour works until it is built and validated. Read `images/astroberry-test/README.md` Status first. No Galileo package, APT repository, or service integration exists. Don't describe them as existing.
 
-## Build commands
+Install Astroberry by listing the packages `astroberry-os` depends on (minus `kstars-bleeding`), not the meta-package. In live-build keep `--firmware-chroot false` (its firmware list pulls in `indi-dsi`, which conflicts with Astroberry's `indi-3rdparty-drivers`) and register the repository via `config/archives/` (files copied into the chroot later are missed by live-build's `apt update`). Update README/PSD status if that changes.
 
-The smoke ISO (Debian 13 Trixie, amd64, `live-build`) lives in [images/amd64-test/](images/amd64-test/):
+This is a git repository (remote history exists). Windows host; any Linux build runs in Docker Desktop.
+
+## Rules of the layer (from the PSD)
+
+- **Leave Astroberry untouched.** Never fork, patch, divert, or overwrite Astroberry-owned files. Integrate with additional packages, systemd drop-ins, separate config files, and extra units. If Astroberry lacks an extension point, the answer is an upstream contribution, not a local patch.
+- **Don't duplicate Astroberry.** Hotspot, Wi-Fi onboarding, remote desktop, INDI/INDI-3rdparty/PHD2/solver builds, OS images, and OS updates are Astroberry's. PSD §5.1 lists them as *inherited* — verify, don't build.
+- **Design every piece to be upstreamable**: generic, optional, GPL-3.0, following Astroberry's packaging conventions (Docker-builder + GitHub Actions, `reprepro` repository with `trixie`/`trixie-testing`/`trixie-staging`). Keep a list of integration points and their upstream status (PSD UP-01).
+- **Use WebConnect** for browser operation of Galileo. Don't write a new general web UI here. Functions WebConnect excludes (profiles, Observatories, safety limits, Options) are reached through the Galileo desktop app in Astroberry's remote desktop.
+- **Updates are APT packages.** No Git-based on-device update function, no stable/nightly INDI channel logic of our own.
+- **Keep Python environments isolated.** Astroberry Manager pins its own requirements (Flask, gevent, `pyindi-client`, …); Galileo needs its own environment and uses its own pure-Python INDI client.
+- Facts about Astroberry in these docs come from its READMEs and `docs/ARCHITECTURE.md`; verify against a running Astroberry system before relying on anything not stated there (default hostname, ports, hook points, whether `brltty` is shipped).
+
+## Superseded earlier work
+
+The earlier direction built a standalone Debian OS. These parts remain but are **superseded** and not part of the product; do not extend them without a decision recorded in PSD §11/§12:
+
+- `images/amd64-test/` — a Debian 13 (Trixie) amd64 smoke-test ISO (`live-build` in a privileged Docker container).
+- `.github/workflows/amd64-virtualbox-smoke-iso.yml` — its CI build.
+- `scripts/build/` — INDI/INDI-3rdparty/PHD2 build scripts (duplicate Astroberry's workflows). `scripts/build-galileo/` may inform Galileo packaging.
+
+No ISO build was ever confirmed successful — don't claim one is. If you do work on them:
 
 ```powershell
-.\images\amd64-test\build-iso.ps1      # from repo root: builds the builder image, runs live-build in a --privileged container
+.\images\amd64-test\build-iso.ps1      # from repo root; output dist/galileo-linux-amd64-smoke-<YYYYMMDD>.iso + .sha256
 ```
 
-Equivalent manual steps (also what CI runs):
+Gotchas that still apply to any shell script or container work here:
 
-```powershell
-docker build --platform linux/amd64 --tag galileo-linux-amd64-smoke-builder:local --file images\amd64-test\Dockerfile .
-docker run --rm --privileged --platform linux/amd64 --volume "${PWD}:/workspace" --workdir /workspace galileo-linux-amd64-smoke-builder:local
-```
-
-Output: `dist/galileo-linux-amd64-smoke-<YYYYMMDD>.iso` plus `.sha256`. Needs ~20 GB free disk and a long run. No unit tests or linter exist; "testing" is `validate-iso.sh` (run automatically by the build) plus the manual VirtualBox checklist in [images/amd64-test/README.md](images/amd64-test/README.md).
-
-No ISO build has been confirmed successful yet (see Progress.md) — don't claim one is complete without a validated run.
-
-## Architecture of the image build
-
-- [Dockerfile](images/amd64-test/Dockerfile) provides the builder container; its entrypoint runs [build-iso.sh](images/amd64-test/build-iso.sh) via `/bin/bash` (scripts use bash strict mode, not POSIX sh).
-- `build-iso.sh` must run as root: `lb clean` → `lb config` (trixie, amd64, iso-hybrid, `--debian-installer live`, `main contrib non-free-firmware`, no apt recommends) → `lb build` → `validate-iso.sh` → copy ISO + sha256 to `dist/`. It operates in-place in `images/amd64-test/`, so `lb` state (`chroot/`, `cache/`, `binary/`, etc.) accumulates there; `config/` and `local/` hold the real source configuration.
-- Package selection: `config/package-lists/galileo-test.list.chroot`. Build-time chroot hook `config/hooks/normal/0990-check-smoke-image.chroot` enables ssh/NetworkManager/Avahi and fails the build if `brltty` is present or required packages are missing. `validate-iso.sh` independently checks the ISO's El Torito boot catalog and package manifest.
-- CI: [.github/workflows/amd64-virtualbox-smoke-iso.yml](.github/workflows/amd64-virtualbox-smoke-iso.yml) runs the same Docker build (manual dispatch, or PRs touching the workflow/`images/amd64-test/**`) and uploads the ISO as an artifact.
-
-## Gotchas and constraints
-
-- **Shell scripts must keep LF line endings.** CRLF (from Windows editing) already broke a container build once.
-- **`brltty` must never be installed or enabled** — it interferes with USB-serial astronomy devices. Keep both the hook check and `validate-iso.sh` enforcing this.
-- The smoke ISO uses live-build's default live account (here `username=galileo`) and runs SSH; it is for isolated development testing only, never the product image.
-- Do not edit or search inside `images/amd64-test/chroot/` — it is generated build output (thousands of files).
-- Product decisions to preserve (from the PSD): default hostname `galileo.local` (changeable in UI); first-boot setup Wi-Fi SSID with fallback hotspot; INDI/INDI-3rdparty stable by default with a user-selectable nightly channel that only applies on the next *manual* update (no scheduled updates); updates fetch project source via Git and build it, while OS packages go through APT; Raspberry Pi deliverable is a raw disk image for Raspberry Pi Imager, not an ISO.
+- **Shell scripts must keep LF line endings.** CRLF from Windows editing already broke a container build once.
+- Scripts use bash strict mode; invoke with `/bin/bash`, not `sh`.
+- Don't edit or search `images/amd64-test/chroot/` — generated build output.
+- **`brltty` must never be installed or enabled** (breaks USB-serial astronomy devices). Verify it on Astroberry rather than assuming.
+- The smoke ISO's default live account and SSH are for isolated testing only.

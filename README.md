@@ -1,67 +1,84 @@
-# Galileo Linux
+# Galileo on Astroberry
 
-Galileo Linux is a planned Debian-based operating system for running the Galileo
-imaging system and INDI on Raspberry Pi 4 and newer devices and 64-bit amd64
-computers. The system is designed to run without a local display, keyboard, or
-mouse, with a Flask-based web interface as the primary way to set up and
-operate the system. PHD2 and the Galileo desktop application run in a minimal
-remote desktop reached over VNC or from a browser through noVNC. SSH is
-available for administration and recovery.
+This project turns an [Astroberry OS](https://github.com/gordtulloch/astroberry-os)
+system into a dedicated [Galileo](https://github.com/gordtulloch/Galileo)
+astrophotography controller. Astroberry OS is a GPL-3.0 operating system for
+controlling astronomy equipment on Raspberry Pi 4/5 and amd64 computers. It
+already provides the base system, INDI and INDI-3rdparty drivers, PHD2, plate
+solvers, a wireless hotspot, a remote desktop in the browser and over VNC,
+and a web interface
+([Astroberry Manager](https://github.com/gordtulloch/astroberry-manager)).
+
+We do **not** build a separate operating system. Galileo is layered on top of
+Astroberry OS as additional packages, using the
+[WebConnect](https://github.com/gordtulloch/Galileo-WebConnect) plugin for
+browser access, and leaving Astroberry's own code untouched. The aim is to
+contribute every Galileo function back to Astroberry so that all Astroberry
+users can use it. Both projects are GPL-3.0.
+
+> The repository is still called GalileoLinux. The name is under review
+> because it no longer describes an operating system (see the PSD, section 11).
 
 ## Project status
 
-The project is at the initial scope stage. A Docker-based amd64 Debian
-live/install ISO build workflow for VirtualBox smoke testing is defined under
-[`images/amd64-test/`](images/amd64-test/), but its first image has not yet been
-built or validated. The product operating system, Flask interface, Galileo and
-INDI integration, and Raspberry Pi image are not yet implemented.
+**Scope stage, plus one base image.** The scope was rewritten around Astroberry
+OS. A Debian 13 (Trixie) amd64 ISO with Astroberry OS installed from its own
+APT repository, without KStars, builds and passes its automated checks and
+starts as a Live CD ([`images/astroberry-test/`](images/astroberry-test/)). That
+first build has no installer and shows the boot menu; the configuration has since
+been changed to boot straight into the Live system and to include a desktop
+installer, but **has not been rebuilt**. No Galileo package, repository, or service
+integration exists.
 
-## Supported targets
+The repository also contains work from the earlier from-scratch direction: a
+smoke-test ISO build that compiles INDI and PHD2 itself
+([`images/amd64-test/`](images/amd64-test/)),
+its CI workflow, and INDI/INDI-3rdparty/PHD2 build scripts
+([`scripts/build/`](scripts/build/)). It duplicates what Astroberry provides,
+was never confirmed to build successfully, and is **superseded**. It is kept
+for reference until its fate is decided (PSD, section 12).
 
-- Raspberry Pi 4 and newer models, using 64-bit ARM Debian.
-- 64-bit amd64 computers.
-- A bootable ISO for 64-bit amd64 computers, testable in Oracle VirtualBox.
-- A Raspberry Pi disk image intended to be written to a microSD card with
-  Raspberry Pi Imager. This is a raw disk image, not an ISO.
-- Operation without a locally attached display: web-based setup, a minimal
-  VNC/noVNC remote desktop for PHD2 and Galileo, and SSH access.
-- A first-boot Wi-Fi setup SSID and fallback hotspot when no configured local
-  Wi-Fi network is available.
-- The default network name `galileo.local`, changeable from the web interface.
-- `brltty` is excluded because it can interfere with serial-over-USB devices.
+## What the Galileo layer adds
 
-## Planned capabilities
+| | Provided by |
+|---|---|
+| Operating system images (Pi arm64, amd64), Wi-Fi hotspot, remote desktop, file sharing | Astroberry OS |
+| INDI, INDI-3rdparty drivers, PHD2, StellarSolver, KStars, ASTAP/Astrometry.net | Astroberry OS |
+| System web pages, INDI Web Manager, APT repository (stable/testing/staging) | Astroberry OS / Astroberry Manager |
+| Galileo application as a Debian package, with its own isolated Python environment | **This project** |
+| WebConnect (browser operation of Galileo) as a Debian package | **This project** |
+| systemd units, drop-ins, desktop launcher, and settings that integrate Galileo with Astroberry's INDI, PHD2, and solvers | **This project** |
+| Link between Astroberry Manager and WebConnect | **This project**, upstreamed where possible |
+| Galileo APT repository, later merged into Astroberry's | **This project** |
+| Upstream pull requests to Astroberry | **This project** |
 
-- Debian-based bootable operating system images for the supported targets.
-- Galileo, INDI, and INDI-3rdparty drivers, with compatible stable builds by
-  default. Users may select nightly builds for the next manually run update;
-  selecting that channel does not schedule or start an update.
-- A Flask web interface for system setup, INDI driver loading and configuration,
-  and Galileo imaging workflows.
-- Web-based Wi-Fi onboarding, fallback hotspot, and device-name configuration.
-- A user-invoked update function that retrieves project source code with Git
-  and builds applicable components; normal Debian operating-system packages
-  are installed and updated through APT.
-- Managed updates, persistent user data, recovery procedures, and documented
-  installation and administration.
+Updates arrive through APT, the same as every other Astroberry package. There
+is no separate project update function.
 
-The [amd64 VirtualBox smoke ISO](images/amd64-test/README.md) contains Debian,
-network tools, SSH, the live installer, INDI, INDI-3rdparty, PHD2, and the
-VNC/noVNC desktop. It does not yet contain Galileo or the Flask interface and is
-not the Galileo Linux product image.
+## Intended installation (planned, not available)
+
+Install Astroberry OS from [astroberry.io](https://astroberry.io/download) or
+onto an existing Debian Trixie / Raspberry Pi OS system as Astroberry
+documents, add the Galileo repository, and install the meta-package:
+
+```
+sudo apt install galileo-astroberry
+```
+
+The repository, package names, and this command are proposals; none exist yet.
 
 ## Project scope
 
-See the [Project Scope Document](docs/PSD.md) for goals, requirements,
-deliverables, feasibility risks, and acceptance criteria.
+See the [Project Scope Document](docs/PSD.md) for principles, requirements,
+architecture, milestones, and open decisions. [CLAUDE.md](CLAUDE.md) and
+[Progress.md](Progress.md) are working notes for contributors.
 
 ## Review questions
 
-Please review the scope, especially:
-
-1. The distinct boot artifact formats: amd64 ISO and Raspberry Pi Imager disk
-   image.
-2. The web-first user experience and the boundary between the Flask interface
-   and Galileo's existing application.
-3. The proposed stable/nightly INDI update behavior and Galileo source update
-   trigger.
+1. The layering rules: Astroberry stays unmodified; Galileo is additional
+   packages only.
+2. Repository name and default hostname (PSD, section 11).
+3. Separate Galileo APT repository versus contributing packages to
+   Astroberry's from the start.
+4. Whether to retire the superseded ISO build or reuse its Docker-builder and
+   validation approach for Galileo package builds.
