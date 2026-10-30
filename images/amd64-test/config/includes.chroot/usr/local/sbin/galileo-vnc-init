@@ -1,0 +1,26 @@
+#!/bin/sh
+# Create the VNC password and noVNC TLS certificate on first start. Runs as
+# root (ExecStartPre=+) and is safe to run repeatedly.
+set -eu
+
+dir=/var/lib/galileo/vnc
+install -d -m 0700 -o astro -g astro "$dir"
+
+if [ ! -s "$dir/passwd" ]; then
+    # VncAuth only uses the first 8 characters.
+    password=$(tr -dc 'A-HJ-NP-Za-km-z2-9' </dev/urandom | head -c 8)
+    printf '%s\n' "$password" > "$dir/password.txt"
+    printf '%s\n' "$password" | vncpasswd -f > "$dir/passwd"
+    chown astro:astro "$dir/passwd" "$dir/password.txt"
+    chmod 0600 "$dir/passwd" "$dir/password.txt"
+    echo "Generated a new VNC password; read it with: sudo cat $dir/password.txt"
+fi
+
+if [ ! -s "$dir/novnc.pem" ]; then
+    openssl req -x509 -newkey rsa:3072 -nodes -days 3650 -subj "/CN=galileo.local" \
+        -keyout "$dir/novnc.pem" -out "$dir/novnc.pem.crt" 2>/dev/null
+    cat "$dir/novnc.pem.crt" >> "$dir/novnc.pem"
+    rm -f "$dir/novnc.pem.crt"
+    chown astro:astro "$dir/novnc.pem"
+    chmod 0600 "$dir/novnc.pem"
+fi

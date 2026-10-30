@@ -1,0 +1,14 @@
+[Unit]
+Description=Galileo virtual desktop (TigerVNC X server on :1)
+After=network.target
+
+[Service]
+User=astro
+Group=astro
+ExecStartPre=+/usr/local/sbin/galileo-vnc-init
+ExecStart=/usr/bin/Xtigervnc :1 -desktop Galileo -geometry 1280x800 -depth 24 \
+    -rfbport 5901 -rfbauth /var/lib/galileo/vnc/passwd -SecurityTypes VncAuth -AlwaysShared
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,28 @@
+# Minimal graphical session for PHD2 and Galileo, reachable only through
+# VNC / noVNC. There is no physical display server: Xtigervnc is a virtual X
+# server.
+tigervnc-standalone-server
+tigervnc-common
+openbox
+xterm
+x11-utils
+x11-xkb-utils
+xkb-data
+fonts-dejavu-core
+libgl1-mesa-dri
+novnc
+websockify
+openssl
+# Runtime support for Galileo (a PySide6/Qt application).
+python3
+python3-venv
+libegl1
+libgl1
+libxcb-cursor0
+libxcb-icccm4
+libxcb-image0
+libxcb-keysyms1
+libxcb-render-util0
+libxcb-shape0
+libxcb-xinerama0
+libxkbcommon-x11-0

@@ -1,0 +1,40 @@
+#!/bin/sh
+set -eu
+
+# Service account that owns the virtual desktop, PHD2, and Galileo. Its password
+# is locked: administrators use the normal login user over SSH or the console.
+if ! id astro >/dev/null 2>&1; then
+    useradd --create-home --shell /bin/bash astro
+fi
+passwd -l astro
+for group in dialout plugdev video audio; do
+    getent group "$group" >/dev/null && usermod -a -G "$group" astro
+done
+install -d -m 0700 -o astro -g astro /var/lib/galileo/vnc
+
+# Make the noVNC landing page open the client directly.
+if [ ! -e /usr/share/novnc/index.html ]; then
+    ln -s vnc.html /usr/share/novnc/index.html
+fi
+
+# live-build's firmware scan matches filenames against the Debian Contents index
+# and wrongly schedules indi-dsi, which drags in Debian's older INDI 1.9.9
+# libraries. INDI is built from source, so remove them. indi-dsi shares file
+# paths with the staged build, so put our copies back afterwards.
+if dpkg -s indi-dsi >/dev/null 2>&1; then
+    keep=$(mktemp -d)
+    dpkg -L indi-dsi | while IFS= read -r path; do
+        if [ -f "$path" ] && grep -qxF "$path" /usr/share/galileo/stage-manifest.txt; then
+            mkdir -p "$keep$(dirname "$path")"
+            cp -a "$path" "$keep$path"
+        fi
+    done
+    apt-get purge --yes indi-dsi libindidriver1 libindi-data
+    cp -a "$keep"/. /
+    rm -rf "$keep"
+fi
+
+# Libraries installed from the staged INDI / INDI-3rdparty / PHD2 build.
+ldconfig
+
+systemctl enable galileo-vnc.service galileo-desktop.service galileo-novnc.service

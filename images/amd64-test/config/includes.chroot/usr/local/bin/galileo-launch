@@ -1,0 +1,11 @@
+#!/bin/sh
+# Start Galileo using the command configured in /etc/galileo/galileo.conf.
+# shellcheck disable=SC1091
+[ -r /etc/galileo/galileo.conf ] && . /etc/galileo/galileo.conf
+
+if [ -z "${GALILEO_COMMAND:-}" ]; then
+    xmessage -center "Galileo is not installed in this image yet.
+Set GALILEO_COMMAND in /etc/galileo/galileo.conf." 2>/dev/null
+    exit 1
+fi
+exec sh -c "$GALILEO_COMMAND"

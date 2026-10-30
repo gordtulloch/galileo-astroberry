@@ -1,0 +1,6 @@
+*.sh text eol=lf
+*.chroot text eol=lf
+*.list.chroot text eol=lf
+*.service text eol=lf
+Dockerfile text eol=lf
+versions.env text eol=lf
