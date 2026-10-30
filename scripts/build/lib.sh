@@ -65,21 +65,30 @@ retry() {
 }
 
 # checkout_source NAME URL STABLE_REF
-# Clones (or updates) NAME under $BUILD_DIR/src and checks out the stable pin,
-# or the remote default branch for the nightly channel.
+# Shallow-clones (or updates) NAME under $BUILD_DIR/src and checks out the stable
+# pin (a tag), or the remote default branch for the nightly channel. Shallow
+# clones keep large repositories such as indi-3rdparty from failing with
+# "early EOF" over a slow link.
 checkout_source() {
     local name=$1 url=$2 stable_ref=$3
     local dir="$BUILD_DIR/src/$name"
 
     if [ ! -d "$dir/.git" ]; then
         log "Cloning $name"
-        retry 5 sh -c "rm -rf '$dir' && git clone '$url' '$dir'"
+        if [ "$CHANNEL" = stable ]; then
+            retry 5 sh -c "rm -rf '$dir' && git clone --depth 1 --branch '$stable_ref' '$url' '$dir'"
+        else
+            retry 5 sh -c "rm -rf '$dir' && git clone --depth 1 '$url' '$dir'"
+        fi
+    elif [ "$CHANNEL" = stable ]; then
+        retry 5 git -C "$dir" fetch --depth 1 --force origin "refs/tags/$stable_ref:refs/tags/$stable_ref"
+    else
+        retry 5 git -C "$dir" fetch --depth 1 origin HEAD
     fi
-    retry 5 git -C "$dir" fetch --tags --force origin
     if [ "$CHANNEL" = stable ]; then
         git -C "$dir" checkout --detach --force "$stable_ref"
     else
-        git -C "$dir" checkout --detach --force "origin/HEAD"
+        git -C "$dir" checkout --detach --force FETCH_HEAD 2>/dev/null || git -C "$dir" checkout --detach --force HEAD
     fi
     log "$name at $(git -C "$dir" describe --tags --always) ($CHANNEL)"
 }
