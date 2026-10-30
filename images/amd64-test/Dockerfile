@@ -11,6 +11,9 @@ RUN /opt/galileo-build/install-build-deps.sh
 RUN /opt/galileo-build/build-indi.sh
 RUN /opt/galileo-build/build-indi-3rdparty.sh
 RUN /opt/galileo-build/build-phd2.sh
+COPY scripts/build-galileo /opt/galileo-build-galileo
+RUN chmod +x /opt/galileo-build-galileo/*.sh \
+    && GALILEO_BUILD_DIR=/opt/galileo-build /opt/galileo-build-galileo/build-galileo.sh
 RUN /opt/galileo-build/runtime-deps.sh > /stage-runtime-packages.txt \
     && cat /stage-runtime-packages.txt \
     && rm -rf /stage/usr/include /stage/usr/lib/*/cmake /stage/usr/lib/*/pkgconfig \
