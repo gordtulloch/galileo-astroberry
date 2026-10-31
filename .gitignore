@@ -1,20 +1,2 @@
-# Build artifacts (ISO and checksum)
+# Build artifacts
 /dist/
-
-# live-build working state and generated configuration under images/amd64-test
-/images/amd64-test/chroot/
-/images/amd64-test/cache/
-/images/amd64-test/.build/
-/images/amd64-test/binary/
-/images/amd64-test/*.iso
-/images/amd64-test/*.contents
-/images/amd64-test/*.files
-/images/amd64-test/*.packages
-/images/amd64-test/config/binary
-/images/amd64-test/config/bootstrap
-/images/amd64-test/config/chroot
-/images/amd64-test/config/common
-/images/amd64-test/config/source
-/images/amd64-test/config/hooks/live/
-/images/amd64-test/config/hooks/normal/*.hook.chroot
-/images/amd64-test/config/package-lists/live.list.chroot
