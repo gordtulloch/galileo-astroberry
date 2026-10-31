@@ -16,27 +16,21 @@ browser access, and leaving Astroberry's own code untouched. The aim is to
 contribute every Galileo function back to Astroberry so that all Astroberry
 users can use it. Both projects are GPL-3.0.
 
-> The repository is still called GalileoLinux. The name is under review
-> because it no longer describes an operating system (see the PSD, section 11).
+> This repository was renamed from GalileoLinux to `galileo-astroberry` because it
+> no longer describes an operating system. The old URL redirects.
 
 ## Project status
 
-**Scope stage, plus one base image.** The scope was rewritten around Astroberry
-OS. A Debian 13 (Trixie) amd64 ISO with Astroberry OS installed from its own
-APT repository, without KStars, builds and passes its automated checks and
-starts as a Live CD ([`images/astroberry-test/`](images/astroberry-test/)). That
-first build has no installer and shows the boot menu; the configuration has since
-been changed to boot straight into the Live system and to include a desktop
-installer, but **has not been rebuilt**. No Galileo package, repository, or service
-integration exists.
+**Scope stage.** The scope was rewritten around Astroberry OS. Galileo will be
+developed and tested on the **official Astroberry OS amd64 distribution image**,
+used unmodified; this project does not build or regenerate an operating system
+image. An earlier attempt to rebuild an Astroberry-like ISO from Astroberry's APT
+repository has been retired and its code deleted (it remains in git history).
+No Galileo package, repository, or service integration exists.
 
-The repository also contains work from the earlier from-scratch direction: a
-smoke-test ISO build that compiles INDI and PHD2 itself
-([`images/amd64-test/`](images/amd64-test/)),
-its CI workflow, and INDI/INDI-3rdparty/PHD2 build scripts
-([`scripts/build/`](scripts/build/)). It duplicates what Astroberry provides,
-was never confirmed to build successfully, and is **superseded**. It is kept
-for reference until its fate is decided (PSD, section 12).
+Earlier work from the from-scratch direction (OS image builds, CI, and
+INDI/PHD2 build scripts) duplicated Astroberry and has been deleted; it remains
+in git history (PSD, section 12).
 
 ## What the Galileo layer adds
 
@@ -77,8 +71,8 @@ architecture, milestones, and open decisions. [CLAUDE.md](CLAUDE.md) and
 
 1. The layering rules: Astroberry stays unmodified; Galileo is additional
    packages only.
-2. Repository name and default hostname (PSD, section 11).
+2. Default hostname (PSD, section 11).
 3. Separate Galileo APT repository versus contributing packages to
    Astroberry's from the start.
-4. Whether to retire the superseded ISO build or reuse its Docker-builder and
-   validation approach for Galileo package builds.
+4. Whether Galileo package builds should reuse the Docker-builder approach of
+   the deleted image builds (available in git history).

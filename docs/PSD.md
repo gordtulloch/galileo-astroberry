@@ -358,8 +358,9 @@ holds with the Galileo layer installed and to record gaps for upstream.
 
 ## 11. Decisions requiring review
 
-- **Name.** Keep "Galileo Linux" for the repository, or rename (for example
-  "Galileo for Astroberry")? "Linux" no longer describes an operating system.
+- **Name.** Decided: the repository is `galileo-astroberry` (renamed from
+  GalileoLinux). Whether the product keeps any "Galileo Linux" branding is open;
+  "Linux" no longer describes an operating system.
 - **Hostname.** Whether the layer changes the device name to `galileo.local` or
   keeps Astroberry's default. Changing it contradicts "leave Astroberry
   untouched" unless done through Astroberry's own setting; the earlier scope
@@ -377,13 +378,13 @@ holds with the Galileo layer installed and to record gaps for upstream.
 - **Which Galileo functions upstream first** and in what order.
 - **Which Astroberry release line** is the validation baseline (current stable
   `trixie`).
-- **Fate of the superseded work** (section 12).
+- **Reuse of the deleted image-build approach** for package builds (section 12).
 
 ## 12. What changed from the earlier scope
 
 | Earlier requirement area | Now |
 |---|---|
-| Own Debian-based OS, ISO and Pi image builds (PLAT) | Astroberry OS images; this project builds none |
+| Own Debian-based OS, ISO and Pi image builds (PLAT) | Astroberry OS images; this project builds none. The official amd64 image is the test base, used unmodified |
 | Flask web UI as the primary interface (WEB) | Astroberry Manager for system tasks; WebConnect for Galileo |
 | First-boot Wi-Fi onboarding, hotspot, hostname | Inherited from Astroberry |
 | INDI/INDI-3rdparty/PHD2 build scripts, stable/nightly channel (INDI, DESK-06) | Inherited: Astroberry packages and repository channels |
@@ -394,10 +395,10 @@ holds with the Galileo layer installed and to record gaps for upstream.
 | User data preservation, services, security (GAL-06/07, OPS) | Kept where Galileo-specific (DATA, SVC); rest inherited |
 | — | New: layering rules, upstream contribution (UP) |
 
-**Superseded work in this repository.** The amd64 smoke-test ISO
-(`images/amd64-test/`), its CI workflow, and the INDI/INDI-3rdparty/PHD2 build
-scripts (`scripts/build/`) were built for the earlier scope and duplicate what
-Astroberry provides. They are kept for now as reference and are not part of
-the new product. Their disposition (retire, or reuse the Docker-builder and
-validation approach for Galileo package builds) is a decision for section 11.
-`scripts/build-galileo/` may inform the Galileo packaging work.
+**Earlier work, deleted.** The earlier image builds (a from-scratch Debian ISO and a
+rebuilt Astroberry image), the CI workflow, and the INDI/INDI-3rdparty/PHD2 build
+scripts were built for the earlier scope, duplicate what Astroberry provides, and
+have been removed; they remain in git history. The official Astroberry OS amd64
+image is used instead. `scripts/build-galileo/` is kept and may inform the Galileo
+packaging work. Whether to reuse the Docker-builder approach from the deleted work
+for Galileo package builds is a decision for section 11.
