@@ -44,7 +44,7 @@ definition, not a claim that any of it exists yet.
    generic, optional, GPL-3.0, following Astroberry's packaging and
    contribution conventions.
 4. **Use WebConnect where appropriate.** Browser access to a running Galileo
-   is provided by the [WebConnect](https://github.com/gordtulloch/Galileo-WebConnect)
+   is provided by the [WebConnect](https://github.com/gordtulloch/Galileo-Plugins/tree/main/webconnect)
    plugin (a Flask application supervised by Galileo's Master node), not by a
    new web interface written for this project.
 5. **Same licence.** Astroberry OS and Astroberry Manager are GPL-3.0; Galileo

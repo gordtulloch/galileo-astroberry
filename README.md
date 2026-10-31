@@ -11,7 +11,7 @@ and a web interface
 
 We do **not** build a separate operating system. Galileo is layered on top of
 Astroberry OS as additional packages, using the
-[WebConnect](https://github.com/gordtulloch/Galileo-WebConnect) plugin for
+[WebConnect](https://github.com/gordtulloch/Galileo-Plugins/tree/main/webconnect) plugin for
 browser access, and leaving Astroberry's own code untouched. The aim is to
 contribute every Galileo function back to Astroberry so that all Astroberry
 users can use it. Both projects are GPL-3.0.
