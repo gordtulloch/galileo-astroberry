@@ -74,3 +74,13 @@ ever validated. Only `scripts/build-galileo/` remains, as input for Galileo pack
 - The WebConnect and MobileConnect plugin documents in the Galileo repository
   have uncommitted changes in progress; coordinate any cross-references
   (WebConnect on Astroberry) with them rather than editing them from here.
+
+## Engine service unit (HEAD-150) — 2026-11-03
+
+`packaging/systemd/galileo-engine.service` runs `galileo --engine` as a systemd service: `Type=notify` (the engine
+sends `READY=1`), ordered after the INDI units, `Restart=on-failure` with a growing delay, at most 5 starts in 10
+minutes, no restart on exit code 3 (another engine holds the lock), journal logging.
+
+Not verified and not packaged: the unit has not been run on an Astroberry image; `User=astroberry` and the INDI unit
+names in `After=` are assumptions to check on the booted image; enabling/disabling it with the Galileo package needs the
+package, which does not exist yet.

@@ -1,0 +1,40 @@
+# Galileo engine (HEAD-150): Galileo with no display, serving the desktop, WebConnect, MobileConnect and NodeConnect.
+#
+# NOT YET VERIFIED ON AN ASTROBERRY IMAGE (see Progress.md): the INDI unit names in After=, and the imaging user in
+# User=, are the assumed Astroberry names. Ordering After= a unit that does not exist is harmless, so the guess is safe
+# to ship while it is checked; User= must be confirmed before this is packaged.
+[Unit]
+Description=Galileo engine
+Documentation=https://github.com/gordtulloch/Galileo/wiki
+After=network-online.target indiserver.service indi-web.service
+Wants=network-online.target
+# Never in a tight loop: at most 5 starts in 10 minutes, then the unit is held as failed until someone looks.
+StartLimitIntervalSec=600
+StartLimitBurst=5
+
+[Service]
+# The engine tells systemd when it is ready (sd_notify) and when it is stopping.
+Type=notify
+NotifyAccess=main
+User=astroberry
+ExecStart=/usr/bin/galileo --engine
+Restart=on-failure
+# Back off between restarts (systemd 254+ grows the delay to the maximum); older systemd uses the fixed delay.
+RestartSec=10
+RestartSteps=5
+RestartMaxDelaySec=300
+# Exit code 3 (EXIT_ALREADY_RUNNING) means another engine already holds the lock: restarting cannot help.
+RestartPreventExitStatus=3
+# The engine stops its sessions and disconnects its devices on SIGTERM, which can take a while.
+TimeoutStopSec=90
+KillSignal=SIGTERM
+# Logs go to the journal (stderr).
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=galileo-engine
+# A service of this kind needs no privileges.
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
